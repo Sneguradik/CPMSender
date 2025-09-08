@@ -6,7 +6,8 @@
 ## 0. Подготовка
 Склонируем проект:
 ```bash
-git clone 
+git clone https://gitlab.corp.spbe/v.ivanov/cpmsender.git
+cd cpmsender
 ```
 
 ---
