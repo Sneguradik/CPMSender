@@ -30,5 +30,5 @@ cd cpmsender
 APIKEY отвечает за доступ к апи индексов, а POSTTRADE_DB к доступу в базу данных сделок.
 
 ```bash
-docker run --env APIKEY=<API_KEY> --env POSTTRADE_DB=<POSTTRADE_DB> --name cpmsender cpmsender 
+docker run --env API_KEY=<API_KEY> --env POSTTRADE_DB=<POSTTRADE_DB> --name cpmsender cpmsender 
 ```

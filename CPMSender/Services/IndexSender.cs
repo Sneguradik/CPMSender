@@ -20,7 +20,7 @@ public class IndexSender(HttpClient httpClient, IOptions<BotConfig> conf, ILogge
         {
             RequestUri = new Uri(conf.Value.Endpoint,  UriKind.Relative),
             Method = HttpMethod.Post,
-            Content = new StringContent(JsonSerializer.Serialize(new IndexModel(){Timestamp = dt, Value = cpm.Price})),
+            Content = new StringContent(JsonSerializer.Serialize(new IndexModel(){Timestamp = dt, Value = Math.Round(cpm.Price, 2)})),
         };
         msg.Headers.TryAddWithoutValidation("Content-Type", "application/json");
         var response = await httpClient.SendAsync(msg, cancellationToken);
