@@ -34,7 +34,7 @@ builder.Services.AddQuartz(options =>
             .ForJob(jobKey)
             .WithIdentity($"{nameof(IndexJob)}-trigger")
             .WithCronSchedule("0 0 10-20 * * ?", x => 
-                x.InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time")))
+               x.InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time")))
         );
 });
 builder.Services.AddQuartzHostedService();

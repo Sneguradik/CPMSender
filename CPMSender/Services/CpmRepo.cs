@@ -13,29 +13,38 @@ public class CpmRepo(PosttradeDbContext dbContext, IOptions<BotConfig> conf) : I
 {
     private string BuildQuery()
     {
+        var instId = conf.Value.InstrumentId;
+
         return $@"
-        SELECT trade_time, price, amount
-        FROM (
-            SELECT trade_time, price, amount, 1 as source_order
-            FROM ""Indiquote""
-            WHERE instrument_instrument_id = {conf.Value.InstrumentId} 
-              AND trade_time >= NOW() - INTERVAL '30 minutes'
-            
-            UNION ALL
-            
-            SELECT trade_time, price, amount, 2 as source_order
-            FROM ""Indiquote""
-            WHERE instrument_instrument_id = {conf.Value.InstrumentId} 
-              AND trade_time < NOW() - INTERVAL '30 minutes'
-            ORDER BY trade_time DESC
-            LIMIT 1
-        ) data
-        ORDER BY source_order, trade_time DESC"
-            .ToString();
+        WITH p AS (
+          SELECT {instId} AS inst,
+                 (NOW() AT TIME ZONE 'UTC') - INTERVAL '30 minutes' AS t0
+        )
+        -- последние 30 минут
+        SELECT i.trade_time, i.price, i.amount
+        FROM ""Indiquote"" i
+        JOIN p ON i.instrument_instrument_id = p.inst
+        WHERE i.trade_time >= p.t0
+
+        UNION ALL
+
+        -- последнее значение ПЕРЕД интервалом
+        SELECT pv.trade_time, pv.price, pv.amount
+        FROM p
+        CROSS JOIN LATERAL (
+          SELECT trade_time, price, amount
+          FROM ""Indiquote""
+          WHERE instrument_instrument_id = p.inst
+            AND trade_time < p.t0
+          ORDER BY trade_time DESC
+          LIMIT 1
+        ) pv
+
+        ORDER BY trade_time DESC".ToString();
     }
 
     public async Task<IEnumerable<CurrentPriceOfMarket>> GetLatest30MinCpmAsync(CancellationToken cancellationToken = default) =>
         await dbContext.Database
             .SqlQueryRaw<CurrentPriceOfMarket>(BuildQuery())
-            .ToListAsync(cancellationToken);
+            .ToArrayAsync(cancellationToken);
 }

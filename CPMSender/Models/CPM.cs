@@ -1,5 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace CPMSender.Models;
 
+[Keyless]
 public class CurrentPriceOfMarket
 {
     public double Price { get; set; }

@@ -11,7 +11,7 @@ public class IndexJob(IIndexSender sender, ICpmRepo cpmRepo, ILogger<IndexJob> l
         {
             logger.LogInformation("Executing index job");
             var dt = DateTime.UtcNow;
-            dt = new DateTime(dt.Year, dt.Month, dt.Day);
+            dt = new DateTime(dt.Year, dt.Month, dt.Day,  dt.Hour, dt.Minute, 0);
             var startTime = dt-TimeSpan.FromMinutes(30);
             
             var cpm = await cpmRepo.GetLatest30MinCpmAsync(context.CancellationToken);
