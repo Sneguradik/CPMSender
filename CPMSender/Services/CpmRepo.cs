@@ -6,17 +6,36 @@ namespace CPMSender.Services;
 
 public interface ICpmRepo
 {
-    Task<CurrentPriceOfMarket?> GetLatestCpmAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<CurrentPriceOfMarket>> GetLatest30MinCpmAsync(CancellationToken cancellationToken = default);
 }
 
 public class CpmRepo(PosttradeDbContext dbContext, IOptions<BotConfig> conf) : ICpmRepo
 {
-    private string BuildQuery() =>
-        $"select trade_time, price, amount from \"Indiquote\" where instrument_instrument_id in ({conf.Value.InstrumentId}) order by  trade_time desc limit 1"
+    private string BuildQuery()
+    {
+        return $@"
+        SELECT trade_time, price, amount
+        FROM (
+            SELECT trade_time, price, amount, 1 as source_order
+            FROM ""Indiquote""
+            WHERE instrument_instrument_id = {conf.Value.InstrumentId} 
+              AND trade_time >= NOW() - INTERVAL '30 minutes'
+            
+            UNION ALL
+            
+            SELECT trade_time, price, amount, 2 as source_order
+            FROM ""Indiquote""
+            WHERE instrument_instrument_id = {conf.Value.InstrumentId} 
+              AND trade_time < NOW() - INTERVAL '30 minutes'
+            ORDER BY trade_time DESC
+            LIMIT 1
+        ) data
+        ORDER BY source_order, trade_time DESC"
             .ToString();
+    }
 
-    public async Task<CurrentPriceOfMarket?> GetLatestCpmAsync(CancellationToken cancellationToken = default) =>
+    public async Task<IEnumerable<CurrentPriceOfMarket>> GetLatest30MinCpmAsync(CancellationToken cancellationToken = default) =>
         await dbContext.Database
             .SqlQueryRaw<CurrentPriceOfMarket>(BuildQuery())
-            .FirstOrDefaultAsync(cancellationToken: cancellationToken);
+            .ToListAsync(cancellationToken);
 }
