@@ -49,7 +49,7 @@ public class IndexJob(IIndexSender sender, ICpmRepo cpmRepo, ILogger<IndexJob> l
                 .ToList();
 
             var pr = currCpm.Count == 0
-                ? cpm.First(x => x.TradeTime < startTime).Price
+                ? prices.LastOrDefault()?.Price??cpm.First(x => x.TradeTime < startTime).Price
                 : currCpm.Average(x => x.Price);
             prices.Add(new CurrentPriceOfMarket(){ Price = pr, TradeTime = startTime });
         
