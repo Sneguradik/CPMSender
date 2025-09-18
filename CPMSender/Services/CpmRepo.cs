@@ -1,3 +1,4 @@
+using System.Globalization;
 using CPMSender.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -6,25 +7,27 @@ namespace CPMSender.Services;
 
 public interface ICpmRepo
 {
-    Task<IEnumerable<CurrentPriceOfMarket>> GetLatest30MinCpmAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<CurrentPriceOfMarket>> GetLatest30MinCpmAsync(DateTime from, CancellationToken cancellationToken = default);
 }
 
-public class CpmRepo(PosttradeDbContext dbContext, IOptions<BotConfig> conf) : ICpmRepo
+public class CpmRepo(PosttradeDbContext dbContext) : ICpmRepo
 {
-    private string BuildQuery()
+    private string BuildQuery(DateTime from)
     {
-        var instId = conf.Value.InstrumentId;
+        var instId = 2679262;
+        var fromUtc = from.ToUniversalTime();
+        var ts = fromUtc.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
 
         return $@"
         WITH p AS (
           SELECT {instId} AS inst,
-                 (NOW() AT TIME ZONE 'UTC') - INTERVAL '30 minutes' AS t0
+                 ('{ts}'::timestamp) - INTERVAL '30 minutes' AS t0
         )
         -- последние 30 минут
         SELECT i.trade_time, i.price, i.amount
         FROM ""Indiquote"" i
         JOIN p ON i.instrument_instrument_id = p.inst
-        WHERE i.trade_time >= p.t0
+        WHERE i.trade_time between t0 and ('{ts}'::timestamp)
 
         UNION ALL
 
@@ -43,8 +46,8 @@ public class CpmRepo(PosttradeDbContext dbContext, IOptions<BotConfig> conf) : I
         ORDER BY trade_time DESC".ToString();
     }
 
-    public async Task<IEnumerable<CurrentPriceOfMarket>> GetLatest30MinCpmAsync(CancellationToken cancellationToken = default) =>
+    public async Task<IEnumerable<CurrentPriceOfMarket>> GetLatest30MinCpmAsync(DateTime from, CancellationToken cancellationToken = default) =>
         await dbContext.Database
-            .SqlQueryRaw<CurrentPriceOfMarket>(BuildQuery())
+            .SqlQueryRaw<CurrentPriceOfMarket>(BuildQuery(from))
             .ToArrayAsync(cancellationToken);
 }
