@@ -10,17 +10,16 @@ public interface ICpmRepo
     Task<IEnumerable<CurrentPriceOfMarket>> GetLatest30MinCpmAsync(DateTime from, CancellationToken cancellationToken = default);
 }
 
-public class CpmRepo(PosttradeDbContext dbContext) : ICpmRepo
+public class CpmRepo(PosttradeDbContext dbContext, IOptions<BotConfig> conf) : ICpmRepo
 {
     private string BuildQuery(DateTime from)
     {
-        var instId = 2679262;
         var fromUtc = from.ToUniversalTime();
         var ts = fromUtc.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
 
         return $@"
         WITH p AS (
-          SELECT {instId} AS inst,
+          SELECT {conf.Value.InstrumentId} AS inst,
                  ('{ts}'::timestamp) - INTERVAL '30 minutes' AS t0
         )
         -- последние 30 минут
