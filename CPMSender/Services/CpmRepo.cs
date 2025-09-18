@@ -27,7 +27,7 @@ public class CpmRepo(PosttradeDbContext dbContext) : ICpmRepo
         SELECT i.trade_time, i.price, i.amount
         FROM ""Indiquote"" i
         JOIN p ON i.instrument_instrument_id = p.inst
-        WHERE i.trade_time between t0 and ('{ts}'::timestamp)
+        WHERE i.trade_time >= t0 and i.trade_time < '{ts}'::timestamp
 
         UNION ALL
 

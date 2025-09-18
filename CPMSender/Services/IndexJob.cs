@@ -38,7 +38,7 @@ public class IndexJob(IIndexSender sender, ICpmRepo cpmRepo, ILogger<IndexJob> l
             
         var prices = new List<CurrentPriceOfMarket>();
 
-        while (startTime <= endTime)
+        while (startTime < endTime)
         {
             var currCpm = cpm.Where(c => 
                     c.TradeTime.Year == startTime.Year && 
